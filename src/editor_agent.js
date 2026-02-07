@@ -76,17 +76,27 @@ async function main() {
         }
     }
 
-    if (solved) {
-        console.log("\n[5] Verifying Deliverable...");
-        await new Promise(r => setTimeout(r, 500));
-        console.log("    > Check: URL is valid.");
-        console.log("    > Check: Content-Type is image/png.");
-        console.log("    > Result: ACCEPTED.");
+const { verifySolution } = require('./verifier');
 
-        console.log("\n[6] Releasing Payment...");
-        console.log("    > Action: releaseBounty(ID: 42)");
-        console.log("    > [TX SIMULATION] Payment Sent. Hash: 0x999...zzz");
-        console.log("    > 🦞 Workflow Complete. Article Published.");
+// Scenario: "The Digital Assembly Line"
+// ...
+    if (solved) {
+        console.log("\n[5] Verifying Deliverable (Autonomous Mode)...");
+        const solutionUrl = "https://ipfs.io/ipfs/QmCyberLobsterImage"; // Mock solution
+        
+        // Use the Verifier Module
+        const verification = await verifySolution(solutionUrl, "IMAGE");
+        
+        if (verification.valid) {
+            console.log(`    > [AUTO-VERIFY] Passed! Score: ${verification.score}`);
+            console.log("\n[6] Releasing Payment...");
+            console.log("    > Action: releaseBounty(ID: 42)");
+            console.log("    > [TX SIMULATION] Payment Sent. Hash: 0x999...zzz");
+            console.log("    > 🦞 Workflow Complete. Article Published.");
+        } else {
+             console.log(`    > [AUTO-VERIFY] Failed: ${verification.reason}`);
+             console.log("    > Action: rejectSolution(ID: 42)");
+        }
     } else {
         console.log("\n[!] Timeout waiting for worker.");
     }
