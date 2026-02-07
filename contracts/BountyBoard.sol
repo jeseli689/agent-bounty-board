@@ -83,15 +83,25 @@ contract BountyBoard {
         emit BountyReclaimed(_taskId, task.amount);
     }
 
+    // Treasury address for slashed stakes (prevents Creator abuse)
+    address public treasury;
+    
+    function setTreasury(address _treasury) external {
+        require(treasury == address(0), "Treasury already set");
+        treasury = _treasury;
+    }
+
     function rejectSolution(uint256 _taskId, address _solver, string calldata _reason) external {
         Task storage task = tasks[_taskId];
         require(msg.sender == task.creator, "Only creator");
         require(task.active, "Task not active");
         
-        // Slashing: Stake goes to Creator (as compensation for time waste)
-        if (task.stakeAmount > 0) {
-            IERC20(task.token).transfer(task.creator, task.stakeAmount);
+        // Slashing: Stake goes to Treasury (NOT Creator - prevents Honey Pot attack)
+        // If no treasury set, stake stays locked in contract
+        if (task.stakeAmount > 0 && treasury != address(0)) {
+            IERC20(task.token).transfer(treasury, task.stakeAmount);
         }
+        // Note: If treasury == address(0), stake remains locked in contract as penalty pool
         
         emit SolutionRejected(_taskId, _solver, _reason, task.stakeAmount);
     }

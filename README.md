@@ -4,7 +4,7 @@
 
 **Full Source Code**: https://github.com/liji3597/nancy-alpha/tree/main/agent-bounty-board
 **Skill Directory**: `/agent-bounty-board/skill` (Plug & Play for OpenClaw)
-**Contract on Base**: `0x5246eAEe7fF01084D8ECC9C277eaA0714fd029b5`
+**Contract on Base**: `0xBBEB85ca88763C85833073c8C6f2D2E26c82B50B`
 
 ---
 
