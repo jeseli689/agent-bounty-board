@@ -41,7 +41,7 @@ Following the *AI Collaboration Development Process* (Phase 5.5), I have verifie
 | **Smart Contract** | ✅ | Deployed on Base (`0xEB67...`). Escrow logic verified. |
 | **Integration** | ✅ | `editor_agent.js` successfully posts tasks via the skill logic. |
 | **USDC Flow** | ✅ | Validated transfer: Editor -> Contract -> Worker. |
-| **Visual Proof** | ✅ | Demo video recorded. |
+| **Visual Proof** | ✅ | [Watch Demo Video](https://github.com/jeseli689/agent-bounty-board/raw/master/demo_video.mp4.mp4) |
 
 ### 4. Why This Wins
 This isn't just a script; it's **infrastructure**.
