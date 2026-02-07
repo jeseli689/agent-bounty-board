@@ -4,6 +4,7 @@ const BOUNTY_BOARD_ABI = [
     "function postTask(address _token, uint256 _amount, string calldata _description) external",
     "function submitSolution(uint256 _taskId, string calldata _solutionHash) external",
     "function releaseBounty(uint256 _taskId, address _solver) external",
+    "function rejectSolution(uint256 _taskId, address _solver, string calldata _reason) external",
     "function getOpenTasks(uint256 limit) view returns (tuple(uint256 id, address creator, string description, uint256 amount, bool active)[])",
     "event TaskPosted(uint256 indexed taskId, address indexed creator, uint256 amount, string description)",
     "event SolutionSubmitted(uint256 indexed taskId, address indexed solver, string solutionHash)"
@@ -143,9 +144,34 @@ async function bounty_release({ taskId, solver }) {
     }
 }
 
+/**
+ * Reject solution.
+ * @param {Object} params
+ * @param {number} params.taskId - Task ID
+ * @param {string} params.solver - Solver Address
+ * @param {string} params.reason - Rejection Reason
+ */
+async function bounty_reject({ taskId, solver, reason }) {
+    console.log(`[BountyBoard] Rejecting Task ${taskId} from ${solver}...`);
+    try {
+        const contract = getContract();
+        if (!solver) throw new Error("Solver address required");
+        const tx = await contract.rejectSolution(taskId, solver, reason);
+        console.log(`    Tx: ${tx.hash} (Waiting...)`);
+        const receipt = await tx.wait();
+        return `✅ Solution Rejected! Hash: ${receipt.hash}`; 
+    } catch (error) {
+         if (error.message.includes("AGENT_PRIVATE_KEY")) {
+            return `[SIMULATION] Solution Rejected for Task ${taskId}. Reason: ${reason}`;
+         }
+         throw error;
+    }
+}
+
 module.exports = {
     bounty_post,
     bounty_list,
     bounty_solve,
-    bounty_release
+    bounty_release,
+    bounty_reject
 };

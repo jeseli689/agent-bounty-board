@@ -1,0 +1,8 @@
+    function rejectSolution(uint256 _taskId, address _solver, string calldata _reason) external {
+        Task storage task = tasks[_taskId];
+        require(msg.sender == task.creator, "Only creator");
+        require(task.active, "Task not active");
+        
+        emit SolutionRejected(_taskId, _solver, _reason);
+    }
+}

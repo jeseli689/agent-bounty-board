@@ -69,6 +69,24 @@
         },
         "required": ["taskId"]
       }
+    },
+    {
+      "name": "bounty_reject",
+      "description": "Reject a submitted solution. Use this if the work is unsatisfactory.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "taskId": {
+            "type": "number",
+            "description": "The ID of the task"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Reason for rejection"
+          }
+        },
+        "required": ["taskId", "reason"]
+      }
     }
   ]
 }

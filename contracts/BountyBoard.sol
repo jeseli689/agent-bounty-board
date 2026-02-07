@@ -23,6 +23,7 @@ contract BountyBoard {
     event SolutionSubmitted(uint256 indexed taskId, address indexed solver, string solutionHash);
     event BountyReleased(uint256 indexed taskId, address indexed solver, uint256 amount);
     event BountyReclaimed(uint256 indexed taskId, uint256 amount);
+    event SolutionRejected(uint256 indexed taskId, address indexed solver, string reason);
 
     function postTask(address _token, uint256 _amount, string calldata _description) external {
         require(_amount > 0, "Amount must be > 0");
@@ -68,5 +69,13 @@ contract BountyBoard {
         IERC20(task.token).transfer(task.creator, task.amount);
 
         emit BountyReclaimed(_taskId, task.amount);
+    }
+
+    function rejectSolution(uint256 _taskId, address _solver, string calldata _reason) external {
+        Task storage task = tasks[_taskId];
+        require(msg.sender == task.creator, "Only creator");
+        require(task.active, "Task not active");
+        
+        emit SolutionRejected(_taskId, _solver, _reason);
     }
 }
