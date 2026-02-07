@@ -41,8 +41,9 @@ async function main() {
     // we construct the exact command the agent would run.
     const description = "Generate 1x Cyberpunk Mars Lobster Image (16:9)";
     const amount = "1.0"; // 1 USDC
+    const stake = "0.1";  // 0.1 USDC Stake Required
 
-    console.log(`    > Action: bounty_post("${description}", "${amount} USDC")`);
+    console.log(`    > Action: bounty_post("${description}", "${amount} USDC", Stake: "${stake} USDC")`);
     
     // TODO: Integrate actual contract call here using the 'post_test.js' logic
     // For now, we simulate the "Post" event to verify flow.
@@ -52,7 +53,7 @@ async function main() {
         // const { execSync } = require('child_process');
         // console.log(execSync(`node agent-bounty-board/scripts/post_test.js "${description}" ${amount}`).toString());
         console.log("    > [TX SIMULATION] Transaction Sent... Hash: 0x123...abc");
-        console.log("    > [EVENT] TaskPosted(ID: 42, Reward: 1.0 USDC)");
+        console.log(`    > [EVENT] TaskPosted(ID: 42, Reward: 1.0 USDC, Stake: 0.1 USDC)`);
     } catch (e) {
         console.error("    > Error posting bounty:", e.message);
     }
