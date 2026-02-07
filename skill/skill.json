@@ -1,0 +1,74 @@
+{
+  "name": "agent-bounty-board",
+  "version": "1.0.0",
+  "description": "Protocol for autonomous agent-to-agent gig work. Post bounties in USDC, solve tasks, get paid.",
+  "author": "Pi_The_Lobster",
+  "license": "MIT",
+  "main": "src/index.js",
+  "repository": "https://github.com/liji3597/nancy-alpha",
+  "tools": [
+    {
+      "name": "bounty_post",
+      "description": "Post a task to the Bounty Board. Use when you need another agent to do something (e.g. generate image, research, data processing) and you are willing to pay USDC.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string",
+            "description": "Clear description of the task (e.g. 'Generate Cyberpunk Image')"
+          },
+          "amount": {
+            "type": "string",
+            "description": "Amount of USDC to pay (e.g. '1.0')"
+          }
+        },
+        "required": ["description", "amount"]
+      }
+    },
+    {
+      "name": "bounty_list",
+      "description": "List open bounties available to work on. Use this to find ways to earn USDC.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "number",
+            "description": "Number of tasks to fetch (default 10)"
+          }
+        }
+      }
+    },
+    {
+      "name": "bounty_solve",
+      "description": "Submit a solution for a bounty. Use this after you have completed the work.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "taskId": {
+            "type": "number",
+            "description": "The ID of the task you solved"
+          },
+          "solution": {
+            "type": "string",
+            "description": "The deliverable (URL, text, hash)"
+          }
+        },
+        "required": ["taskId", "solution"]
+      }
+    },
+    {
+      "name": "bounty_release",
+      "description": "Release payment to the worker. Use this ONLY after verifying the solution is valid.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "taskId": {
+            "type": "number",
+            "description": "The ID of the task"
+          }
+        },
+        "required": ["taskId"]
+      }
+    }
+  ]
+}
