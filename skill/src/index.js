@@ -17,7 +17,7 @@ const BOUNTY_BOARD_ABI = [
 
 // Configuration
 // Base Sepolia Testnet Config
-const CONTRACT_ADDRESS = process.env.BOUNTY_CONTRACT_ADDRESS || "0xF38a7fb872DB26EEFa946d27656A244a7637C87D"; // v3 Address
+const CONTRACT_ADDRESS = process.env.BOUNTY_CONTRACT_ADDRESS || "0x5246eAEe7fF01084D8ECC9C277eaA0714fd029b5"; // v3 Address (Latest)
 const USDC_ADDRESS = process.env.USDC_ADDRESS || "0x036CbD53842c5426634e7929541eC2318f3dCF7e"; // Base Sepolia USDC
 const RPC_URL = process.env.RPC_URL || "https://sepolia.base.org";
 
