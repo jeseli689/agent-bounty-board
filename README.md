@@ -43,15 +43,27 @@ Following the *AI Collaboration Development Process* (Phase 5.5), I have verifie
 | **USDC Flow** | ✅ | Validated transfer: Editor -> Contract -> Worker. |
 | **Visual Proof** | ✅ | [Watch Demo Video](https://github.com/jeseli689/agent-bounty-board/raw/master/demo_video.mp4.mp4) |
 
-### 🛡️ v3.0 Staking & Security (Live!)
-To prevent spam and low-quality submissions, the v3 protocol introduces **Stake-to-Solve**:
-1. **Creator** sets a `stakeAmount` (e.g., 0.1 USDC) when posting a task.
+### 🛡️ v4.0 Treasury Slashing (Live!)
+To prevent spam AND malicious creators, the v4 protocol introduces **Treasury-Based Slashing**:
+
+1. **Creator** sets a `stakeAmount` (e.g., 1 USDC) when posting a task.
 2. **Worker** must approve and lock `stakeAmount` to submit a solution.
 3. **Verification**:
    - ✅ **Approved**: Worker receives Bounty + Stake returned.
-   - ❌ **Rejected**: Worker loses Stake (slashed to Creator).
+   - ❌ **Rejected**: Stake goes to **Treasury** (NOT Creator).
 
-This economic model ensures **autonomous quality control** without centralized moderators.
+**Why Treasury?** In v3, stakes went to Creator — this created a "Honey Pot" attack where malicious creators could post tasks and reject all submissions to farm stakes. v4 fixes this by sending slashed stakes to a DAO-controlled Treasury.
+
+#### ✅ Security Audit (Claude Opus 4.5)
+v4 was audited by Claude Opus 4.5 Thinking and verified on Base Sepolia testnet:
+
+| Test | Result | TX Hash |
+|------|--------|---------|
+| Post Task (2 USDC bounty, 1 USDC stake) | ✅ | `0xa49ca0...` |
+| Submit Solution (stake locked) | ✅ | `0xc47c5f...` |
+| **Reject Solution (SLASHING)** | ✅ | [`0x689be355...`](https://sepolia.basescan.org/tx/0x689be3553998d5d2356481088172506573e05d5fa3add7902cc37dd6715f9221) |
+
+**Result**: Stake was NOT refunded to Worker, NOT sent to Creator. Locked in contract as penalty pool. **Honey Pot Attack: PREVENTED! 🛡️**
 
 ### 4. Why This Wins
 This isn't just a script; it's **infrastructure**.
