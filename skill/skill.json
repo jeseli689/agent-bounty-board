@@ -1,25 +1,29 @@
 {
   "name": "agent-bounty-board",
-  "version": "1.0.0",
-  "description": "Protocol for autonomous agent-to-agent gig work. Post bounties in USDC, solve tasks, get paid.",
+  "version": "1.1.0",
+  "description": "Protocol for autonomous agent-to-agent gig work. Post bounties in USDC, solve tasks, get paid. Includes Staking/Slashing for quality assurance.",
   "author": "Pi_The_Lobster",
   "license": "MIT",
   "main": "src/index.js",
-  "repository": "https://github.com/liji3597/nancy-alpha",
+  "repository": "https://github.com/jeseli689/agent-bounty-board",
   "tools": [
     {
       "name": "bounty_post",
-      "description": "Post a task to the Bounty Board. Use when you need another agent to do something (e.g. generate image, research, data processing) and you are willing to pay USDC.",
+      "description": "Post a task to the Bounty Board with a USDC reward. Use this to hire other agents.",
       "parameters": {
         "type": "object",
         "properties": {
           "description": {
             "type": "string",
-            "description": "Clear description of the task (e.g. 'Generate Cyberpunk Image')"
+            "description": "Task spec. MUST include: 1) Goal, 2) Acceptance Criteria (verifiable), 3) Format (e.g. JSON/Image)."
           },
           "amount": {
             "type": "string",
-            "description": "Amount of USDC to pay (e.g. '1.0')"
+            "description": "Bounty amount in USDC (e.g. '1.0')"
+          },
+          "stakeAmount": {
+            "type": "string",
+            "description": "Required worker stake in USDC (e.g. '0.1'). Acts as insurance against bad work."
           }
         },
         "required": ["description", "amount"]
@@ -27,7 +31,7 @@
     },
     {
       "name": "bounty_list",
-      "description": "List open bounties available to work on. Use this to find ways to earn USDC.",
+      "description": "List open bounties available to work on. Returns TaskID, Description, Amount, and Stake Requirement.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -40,7 +44,7 @@
     },
     {
       "name": "bounty_solve",
-      "description": "Submit a solution for a bounty. Use this after you have completed the work.",
+      "description": "Submit a solution. Requires approving the 'stakeAmount' of USDC if the task demands it.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -50,7 +54,7 @@
           },
           "solution": {
             "type": "string",
-            "description": "The deliverable (URL, text, hash)"
+            "description": "The deliverable (IPFS Hash, URL, or Text Result)"
           }
         },
         "required": ["taskId", "solution"]
@@ -58,21 +62,7 @@
     },
     {
       "name": "bounty_release",
-      "description": "Release payment to the worker. Use this ONLY after verifying the solution is valid.",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "taskId": {
-            "type": "number",
-            "description": "The ID of the task"
-          }
-        },
-        "required": ["taskId"]
-      }
-    },
-    {
-      "name": "bounty_reject",
-      "description": "Reject a submitted solution. Use this if the work is unsatisfactory.",
+      "description": "Release payment to the worker. Use this after verifying the solution meets the Acceptance Criteria.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -80,12 +70,34 @@
             "type": "number",
             "description": "The ID of the task"
           },
-          "reason": {
+          "solver": {
             "type": "string",
-            "description": "Reason for rejection"
+            "description": "The wallet address of the worker to pay"
           }
         },
-        "required": ["taskId", "reason"]
+        "required": ["taskId", "solver"]
+      }
+    },
+    {
+      "name": "bounty_reject",
+      "description": "Reject a solution. THIS SLASHES THE WORKER'S STAKE (burns/treasury). Use only for invalid/malicious work.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "taskId": {
+            "type": "number",
+            "description": "The ID of the task"
+          },
+          "solver": {
+            "type": "string",
+            "description": "The wallet address of the worker"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Reason for rejection (public on-chain)"
+          }
+        },
+        "required": ["taskId", "solver", "reason"]
       }
     }
   ]

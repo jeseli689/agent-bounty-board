@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+/**
+ * @title Agent Bounty Board v1.2 (Optimized)
+ * @notice Trustless Gig Economy for AI Agents with Staking & Treasury Slashing
+ * @dev Optimized for Base L2 (Gas Efficient Pagination)
+ */
+
 interface IERC20 {
     function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
     function transfer(address recipient, uint256 amount) external returns (bool);
@@ -8,17 +14,26 @@ interface IERC20 {
 
 contract BountyBoard {
     struct Task {
+        uint256 id;
         address creator;
         string description;
         uint256 amount;
-        uint256 stakeAmount; // New: Worker must stake this amount
-        address token; // USDC address
+        uint256 stakeAmount;
+        address token;
         bool active;
         uint256 timestamp;
     }
 
     uint256 public nextTaskId;
     mapping(uint256 => Task) public tasks;
+    
+    // Pagination: Active Task Indexing
+    // We keep an array of active task IDs to allow O(1) fetching of open work
+    // instead of iterating through thousands of completed tasks.
+    uint256[] public activeTaskIds;
+    mapping(uint256 => uint256) private activeTaskIndex; // taskId -> index in activeTaskIds
+
+    address public treasury;
 
     event TaskPosted(uint256 indexed taskId, address indexed creator, uint256 amount, uint256 stakeAmount, string description);
     event SolutionSubmitted(uint256 indexed taskId, address indexed solver, string solutionHash);
@@ -26,11 +41,22 @@ contract BountyBoard {
     event BountyReclaimed(uint256 indexed taskId, uint256 amount);
     event SolutionRejected(uint256 indexed taskId, address indexed solver, string reason, uint256 stakeSlashed);
 
+    constructor(address _treasury) {
+        treasury = _treasury;
+    }
+
+    // --- Core Logic ---
+
     function postTask(address _token, uint256 _amount, uint256 _stakeAmount, string calldata _description) external {
         require(_amount > 0, "Amount must be > 0");
-        IERC20(_token).transferFrom(msg.sender, address(this), _amount);
+        
+        // Secure Funds
+        require(IERC20(_token).transferFrom(msg.sender, address(this), _amount), "Transfer failed");
 
-        tasks[nextTaskId] = Task({
+        uint256 taskId = nextTaskId++;
+        
+        tasks[taskId] = Task({
+            id: taskId,
             creator: msg.sender,
             description: _description,
             amount: _amount,
@@ -40,17 +66,19 @@ contract BountyBoard {
             timestamp: block.timestamp
         });
 
-        emit TaskPosted(nextTaskId, msg.sender, _amount, _stakeAmount, _description);
-        nextTaskId++;
+        // Add to active set
+        activeTaskIndex[taskId] = activeTaskIds.length;
+        activeTaskIds.push(taskId);
+
+        emit TaskPosted(taskId, msg.sender, _amount, _stakeAmount, _description);
     }
 
     function submitSolution(uint256 _taskId, string calldata _solutionHash) external {
         Task storage task = tasks[_taskId];
         require(task.active, "Task not active");
         
-        // Staking Logic: Worker must transfer stake to contract
         if (task.stakeAmount > 0) {
-            IERC20(task.token).transferFrom(msg.sender, address(this), task.stakeAmount);
+            require(IERC20(task.token).transferFrom(msg.sender, address(this), task.stakeAmount), "Stake failed");
         }
 
         emit SolutionSubmitted(_taskId, msg.sender, _solutionHash);
@@ -61,34 +89,12 @@ contract BountyBoard {
         require(msg.sender == task.creator, "Only creator");
         require(task.active, "Task not active");
 
-        task.active = false;
+        _closeTask(_taskId);
         
-        // Payout: Bounty + Return Stake
         uint256 totalPayout = task.amount + task.stakeAmount;
-        IERC20(task.token).transfer(_solver, totalPayout);
+        require(IERC20(task.token).transfer(_solver, totalPayout), "Payout failed");
 
         emit BountyReleased(_taskId, _solver, task.amount, task.stakeAmount);
-    }
-
-    function reclaimBounty(uint256 _taskId) external {
-        Task storage task = tasks[_taskId];
-        require(msg.sender == task.creator, "Only creator");
-        require(task.active, "Task not active");
-        // Simple timeout: 7 days
-        require(block.timestamp > task.timestamp + 7 days, "Timelock active");
-
-        task.active = false;
-        IERC20(task.token).transfer(task.creator, task.amount);
-
-        emit BountyReclaimed(_taskId, task.amount);
-    }
-
-    // Treasury address for slashed stakes (prevents Creator abuse)
-    address public treasury;
-    
-    function setTreasury(address _treasury) external {
-        require(treasury == address(0), "Treasury already set");
-        treasury = _treasury;
     }
 
     function rejectSolution(uint256 _taskId, address _solver, string calldata _reason) external {
@@ -96,13 +102,65 @@ contract BountyBoard {
         require(msg.sender == task.creator, "Only creator");
         require(task.active, "Task not active");
         
-        // Slashing: Stake goes to Treasury (NOT Creator - prevents Honey Pot attack)
-        // If no treasury set, stake stays locked in contract
+        // Slashing: Funds go to Treasury
         if (task.stakeAmount > 0 && treasury != address(0)) {
             IERC20(task.token).transfer(treasury, task.stakeAmount);
         }
-        // Note: If treasury == address(0), stake remains locked in contract as penalty pool
         
         emit SolutionRejected(_taskId, _solver, _reason, task.stakeAmount);
+    }
+
+    function reclaimBounty(uint256 _taskId) external {
+        Task storage task = tasks[_taskId];
+        require(msg.sender == task.creator, "Only creator");
+        require(task.active, "Task not active");
+        require(block.timestamp > task.timestamp + 7 days, "Timelock active");
+
+        _closeTask(_taskId);
+        
+        require(IERC20(task.token).transfer(task.creator, task.amount), "Reclaim failed");
+        emit BountyReclaimed(_taskId, task.amount);
+    }
+
+    // --- Internal Helpers ---
+
+    function _closeTask(uint256 _taskId) internal {
+        tasks[_taskId].active = false;
+        
+        // Remove from active array (Swap & Pop)
+        uint256 index = activeTaskIndex[_taskId];
+        uint256 lastTaskId = activeTaskIds[activeTaskIds.length - 1];
+
+        activeTaskIds[index] = lastTaskId;
+        activeTaskIndex[lastTaskId] = index;
+        activeTaskIds.pop();
+        
+        delete activeTaskIndex[_taskId];
+    }
+
+    // --- Read Functions (Pagination) ---
+
+    /**
+     * @notice Get a slice of active tasks for efficient UI/Agent listing
+     * @param offset Start index
+     * @param limit Max items to return
+     */
+    function getOpenTasks(uint256 offset, uint256 limit) external view returns (Task[] memory) {
+        uint256 total = activeTaskIds.length;
+        if (offset >= total) return new Task[](0);
+
+        uint256 end = offset + limit;
+        if (end > total) end = total;
+        uint256 resultLen = end - offset;
+
+        Task[] memory result = new Task[](resultLen);
+        for (uint256 i = 0; i < resultLen; i++) {
+            result[i] = tasks[activeTaskIds[offset + i]];
+        }
+        return result;
+    }
+
+    function getActiveTaskCount() external view returns (uint256) {
+        return activeTaskIds.length;
     }
 }
